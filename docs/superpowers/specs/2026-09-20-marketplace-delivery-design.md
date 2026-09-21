@@ -1,7 +1,8 @@
-# Marketplace de Delivery — Design do MVP
+# Mendu Delivery — Design do MVP
 
 **Data:** 2026-09-20
 **Status:** Aprovado para planejamento de implementação
+**Marca:** Mendu Delivery (definido em 2026-09-21 — ver Seção 10)
 
 ## 1. Contexto e objetivo
 
@@ -372,3 +373,17 @@ Toda ação grava uma linha em `audit_log`.
 ## 9. Princípio geral
 
 Priorizar simplicidade de implementação no MVP, mas manter dados, eventos e interfaces (RoutingService, StorageService, camada de acesso a dado) separados o suficiente para que cache, filas, workers, entregador, GPS, roteirização e IA operacional sejam adicionados depois sem reescrever o núcleo da aplicação.
+
+## 10. Identidade de marca
+
+**Nome escolhido:** Mendu Delivery. "Mendu" vem do esperanto (*mendi* = pedir/encomendar; *mendu* = "peça!", forma imperativa) — carrega significado real ligado ao ato de pedir, mas soa distintivo ao ouvido brasileiro.
+
+**Diligência de nome realizada em 2026-09-21** (antes de "Mendu", os candidatos "TôAqui" e "Vinkoo" foram descartados por colisão real com marcas/negócios já ativos no setor de delivery/marketplace — ver histórico da conversa de brainstorming para detalhes):
+- INPI: sem resultado para "MENDU" (exata e radical) e sem resultado ao filtrar pelas classes de Nice 35 (comércio/marketplace), 39 (transporte/logística), 42 (tecnologia) e 43 (serviços de alimentação) — as quatro classes relevantes para o negócio.
+- Sem concorrente ativo identificado no Brasil ou no exterior no setor de delivery com esse nome.
+- Domínio `mendudelivery.com.br` registrado (HostGator).
+- Pendente: busca formal com agente de propriedade industrial antes do depósito oficial da marca no INPI (a autobusca não garante deferimento); registro de handles em redes sociais.
+
+**Tagline oficial:** "Peça. Receba. Aproveite."
+
+**Identidade visual:** ver `brand/README.md` — logo em variações full-color, mono preto/branco, escala de cinza e símbolo "U" isolado. Vetorização e exportação de ícone de app/favicon ainda pendentes.
