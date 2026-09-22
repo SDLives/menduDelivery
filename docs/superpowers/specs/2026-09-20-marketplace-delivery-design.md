@@ -117,7 +117,15 @@ Unique (`store_id`, `user_id`).
 | customer_id | FK, nullable |
 | store_id | FK, nullable |
 | — | CHECK: exatamente um dos dois preenchido |
-| street, number, complement, neighborhood, city, state, zip_code | text |
+| cep | text |
+| rua | text |
+| numero | text |
+| complemento | text, nullable |
+| loteamento | text, nullable |
+| bairro | text |
+| municipio | text |
+| uf | text |
+| ativo | bool, default true — desativação lógica (endereço "removido" pelo cliente continua existindo para pedidos antigos que já referenciam `delivery_address_id`) |
 | lat, lng | numeric, nullable — não usado no MVP, preparado para roteirização/tracking futuro |
 
 **`media_assets`**
