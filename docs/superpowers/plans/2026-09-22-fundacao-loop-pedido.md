@@ -20,6 +20,7 @@
 - `order_items` (tabela nova, não estava na spec original — ver decisão registrada na sessão de 2026-09-22) guarda snapshot de nome/preço do produto no pedido.
 - Sem variações estruturadas de produto neste plano — cada combinação (tamanho, sabor) é um `product` separado cadastrado pelo lojista. `order_items.observacoes` (texto livre) cobre pedidos especiais.
 - Sem UI de admin completa neste plano — aprovação de loja é uma ação server-side simples restrita a `platform_admin`, sem painel visual dedicado (isso é o Plano 4).
+- Visual das telas voltadas a cliente/lojista (cadastro, vitrine, checkout, acompanhamento) segue o preview aprovado em 2026-09-22: `https://claude.ai/artifact/3Jd6g4AhYGcKWQ2984PKQi` — paleta `mendu-red #E31E24`, `mendu-ink #17181C`, `mendu-bg #FAF9F7`, `mendu-border #ECEAE5`, `mendu-gold #F5A623`, `mendu-green #1E8E5A`; tipografia Fredoka (marca/títulos) + Plus Jakarta Sans (interface), via Tailwind CSS. Cores podem mudar depois sem impacto estrutural — são só tokens no `tailwind.config.ts`.
 
 ---
 
@@ -29,12 +30,16 @@
 package.json
 .env.example
 vitest.config.ts
+tailwind.config.ts
+postcss.config.js
 supabase/
   migrations/
     0001_core_identity_and_store.sql
     0002_commerce.sql
     0003_rls.sql
 src/
+  app/
+    globals.css
   lib/
     db/
       pool.ts
@@ -88,21 +93,21 @@ tests/
 
 ---
 
-### Task 1: Scaffolding do projeto Next.js + TypeScript + Vitest
+### Task 1: Scaffolding do projeto Next.js + TypeScript + Tailwind + Vitest
 
 **Files:**
-- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `.env.example`, `.gitignore`, `vitest.config.ts`
-- Create: `src/app/layout.tsx`, `src/app/page.tsx`
+- Create: `package.json`, `tsconfig.json`, `next.config.ts`, `.env.example`, `.gitignore`, `vitest.config.ts`, `tailwind.config.ts`, `postcss.config.js`
+- Create: `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`
 - Test: `tests/smoke.test.ts`
 
 **Interfaces:**
-- Produces: projeto Next.js rodável (`npm run dev`), test runner Vitest rodável (`npm test`).
+- Produces: projeto Next.js rodável (`npm run dev`), test runner Vitest rodável (`npm test`), Tailwind configurado com os tokens de marca Mendu Delivery (cores/fontes), reutilizáveis por qualquer página das tasks seguintes via classes utilitárias (`bg-mendu-red`, `text-mendu-ink`, `font-brand`, etc.).
 
-- [ ] **Step 1: Criar o projeto Next.js**
+- [ ] **Step 1: Criar o projeto Next.js com Tailwind**
 
 Run:
 ```bash
-npx create-next-app@latest . --typescript --app --eslint --src-dir --import-alias "@/*" --use-npm --no-tailwind
+npx create-next-app@latest . --typescript --app --eslint --src-dir --import-alias "@/*" --use-npm --tailwind
 ```
 
 - [ ] **Step 2: Instalar dependências adicionais**
@@ -113,7 +118,78 @@ npm install pg @supabase/supabase-js zod zustand
 npm install -D vitest @types/pg dotenv
 ```
 
-- [ ] **Step 3: Configurar Vitest**
+- [ ] **Step 3: Configurar os tokens de marca no Tailwind**
+
+Create `tailwind.config.ts` (substitui o gerado pelo scaffold):
+```typescript
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        mendu: {
+          red: '#E31E24',
+          reddark: '#8C0F13',
+          ink: '#17181C',
+          inksoft: '#4B4D55',
+          muted: '#83858C',
+          bg: '#FAF9F7',
+          border: '#ECEAE5',
+          gold: '#F5A623',
+          green: '#1E8E5A',
+        },
+      },
+      fontFamily: {
+        brand: ['var(--font-fredoka)', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+```
+
+- [ ] **Step 4: Carregar as fontes da marca (Fredoka + Plus Jakarta Sans) e aplicar o fundo/tipografia base**
+
+Create `src/app/layout.tsx`:
+```tsx
+import type { Metadata } from 'next';
+import { Fredoka, Plus_Jakarta_Sans } from 'next/font/google';
+import './globals.css';
+
+const fredoka = Fredoka({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-fredoka' });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jakarta',
+});
+
+export const metadata: Metadata = {
+  title: 'Mendu Delivery',
+  description: 'Peça. Receba. Aproveite.',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR" className={`${fredoka.variable} ${jakarta.variable}`}>
+      <body className="bg-mendu-bg font-sans text-mendu-ink antialiased">{children}</body>
+    </html>
+  );
+}
+```
+
+Create `src/app/globals.css`:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+- [ ] **Step 5: Configurar Vitest**
 
 Create `vitest.config.ts`:
 ```typescript
@@ -143,7 +219,7 @@ Add to `package.json` scripts:
 }
 ```
 
-- [ ] **Step 4: Criar `.env.example`**
+- [ ] **Step 6: Criar `.env.example`**
 
 Create `.env.example`:
 ```bash
@@ -162,7 +238,7 @@ BUNNY_STORAGE_API_KEY=changeme
 BUNNY_CDN_BASE_URL=https://changeme.b-cdn.net
 ```
 
-- [ ] **Step 5: Escrever teste de fumaça**
+- [ ] **Step 7: Escrever teste de fumaça**
 
 Create `tests/smoke.test.ts`:
 ```typescript
@@ -175,16 +251,21 @@ describe('smoke', () => {
 });
 ```
 
-- [ ] **Step 6: Rodar o teste e confirmar que passa**
+- [ ] **Step 8: Rodar o teste e confirmar que passa**
 
 Run: `npm test`
 Expected: PASS (1 test)
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Rodar `npm run dev` e confirmar visualmente a fonte/cor de fundo**
+
+Run: `npm run dev`, abrir `http://localhost:3000`.
+Expected: página com fundo `#FAF9F7` (bege claro) e fonte Plus Jakarta Sans aplicada (confirma que `layout.tsx`/`globals.css`/Tailwind estão conectados corretamente antes de construir as telas de verdade nas próximas tasks).
+
+- [ ] **Step 10: Commit**
 
 ```bash
-git add package.json package-lock.json tsconfig.json next.config.ts .env.example .gitignore vitest.config.ts src/app tests/smoke.test.ts
-git commit -m "chore: scaffold Next.js project with Vitest"
+git add package.json package-lock.json tsconfig.json next.config.ts .env.example .gitignore vitest.config.ts tailwind.config.ts postcss.config.js src/app tests/smoke.test.ts
+git commit -m "chore: scaffold Next.js project with Tailwind and brand tokens"
 ```
 
 ---
@@ -1303,23 +1384,51 @@ export default function CadastroClientePage() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Criar conta</h1>
-      <label>
-        E-mail
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </label>
-      <label>
-        Senha
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
-      </label>
-      <label>
-        Telefone (opcional)
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit">Criar conta</button>
-    </form>
+    <div className="flex min-h-screen items-center justify-center bg-mendu-bg px-5">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-mendu-border bg-white p-6 shadow-sm"
+      >
+        <h1 className="font-brand text-2xl font-bold text-mendu-ink">Criar conta</h1>
+        <label className="flex flex-col gap-1 text-sm font-semibold text-mendu-ink">
+          E-mail
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="rounded-xl border border-mendu-border px-3 py-2.5 text-sm font-normal outline-none focus:border-mendu-red"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-semibold text-mendu-ink">
+          Senha
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            className="rounded-xl border border-mendu-border px-3 py-2.5 text-sm font-normal outline-none focus:border-mendu-red"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-semibold text-mendu-ink">
+          Telefone (opcional)
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="rounded-xl border border-mendu-border px-3 py-2.5 text-sm font-normal outline-none focus:border-mendu-red"
+          />
+        </label>
+        {error && <p className="text-sm font-semibold text-mendu-red">{error}</p>}
+        <button
+          type="submit"
+          className="mt-2 rounded-xl bg-mendu-red py-3 text-sm font-bold text-white transition hover:bg-mendu-reddark"
+        >
+          Criar conta
+        </button>
+      </form>
+    </div>
   );
 }
 ```
@@ -1561,23 +1670,39 @@ export default function CadastroLojaPage() {
     }
   }
 
+  const inputClass =
+    'rounded-xl border border-mendu-border px-3 py-2.5 text-sm outline-none focus:border-mendu-red';
+
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Cadastrar minha loja</h1>
-      <input placeholder="Nome da loja" value={form.storeName} onChange={(e) => update('storeName', e.target.value)} required />
-      <input placeholder="slug-da-loja" value={form.storeSlug} onChange={(e) => update('storeSlug', e.target.value)} required />
-      <input type="email" placeholder="E-mail" value={form.email} onChange={(e) => update('email', e.target.value)} required />
-      <input type="password" placeholder="Senha" value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} />
-      <input placeholder="CEP" value={form.cep} onChange={(e) => update('cep', e.target.value)} required />
-      <input placeholder="Rua" value={form.rua} onChange={(e) => update('rua', e.target.value)} required />
-      <input placeholder="Número" value={form.numero} onChange={(e) => update('numero', e.target.value)} required />
-      <input placeholder="Complemento" value={form.complemento} onChange={(e) => update('complemento', e.target.value)} />
-      <input placeholder="Bairro" value={form.bairro} onChange={(e) => update('bairro', e.target.value)} required />
-      <input placeholder="Município" value={form.municipio} onChange={(e) => update('municipio', e.target.value)} required />
-      <input placeholder="UF" maxLength={2} value={form.uf} onChange={(e) => update('uf', e.target.value.toUpperCase())} required />
-      {error && <p role="alert">{error}</p>}
-      <button type="submit">Cadastrar</button>
-    </form>
+    <div className="flex min-h-screen items-center justify-center bg-mendu-bg px-5 py-10">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-md flex-col gap-3 rounded-2xl border border-mendu-border bg-white p-6 shadow-sm"
+      >
+        <h1 className="font-brand text-2xl font-bold text-mendu-ink">Cadastrar minha loja</h1>
+        <p className="-mt-2 text-sm text-mendu-muted">Sua loja fica pendente de aprovação até revisarmos o cadastro.</p>
+        <input className={inputClass} placeholder="Nome da loja" value={form.storeName} onChange={(e) => update('storeName', e.target.value)} required />
+        <input className={inputClass} placeholder="slug-da-loja" value={form.storeSlug} onChange={(e) => update('storeSlug', e.target.value)} required />
+        <input className={inputClass} type="email" placeholder="E-mail" value={form.email} onChange={(e) => update('email', e.target.value)} required />
+        <input className={inputClass} type="password" placeholder="Senha" value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} />
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <input className={`${inputClass} col-span-2`} placeholder="CEP" value={form.cep} onChange={(e) => update('cep', e.target.value)} required />
+          <input className={`${inputClass} col-span-2`} placeholder="Rua" value={form.rua} onChange={(e) => update('rua', e.target.value)} required />
+          <input className={inputClass} placeholder="Número" value={form.numero} onChange={(e) => update('numero', e.target.value)} required />
+          <input className={inputClass} placeholder="Complemento" value={form.complemento} onChange={(e) => update('complemento', e.target.value)} />
+          <input className={`${inputClass} col-span-2`} placeholder="Bairro" value={form.bairro} onChange={(e) => update('bairro', e.target.value)} required />
+          <input className={inputClass} placeholder="Município" value={form.municipio} onChange={(e) => update('municipio', e.target.value)} required />
+          <input className={inputClass} placeholder="UF" maxLength={2} value={form.uf} onChange={(e) => update('uf', e.target.value.toUpperCase())} required />
+        </div>
+        {error && <p className="text-sm font-semibold text-mendu-red">{error}</p>}
+        <button
+          type="submit"
+          className="mt-2 rounded-xl bg-mendu-red py-3 text-sm font-bold text-white transition hover:bg-mendu-reddark"
+        >
+          Cadastrar
+        </button>
+      </form>
+    </div>
   );
 }
 ```
@@ -2246,15 +2371,38 @@ export default async function HomePage() {
   const stores = await listActiveStores();
 
   return (
-    <div>
-      <h1>Lojas perto de você</h1>
-      <ul>
-        {stores.map((store) => (
-          <li key={store.id}>
-            <Link href={`/loja/${store.slug}`}>{store.name}</Link>
-          </li>
-        ))}
-      </ul>
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-mendu-bg">
+      <header className="flex flex-col gap-1 border-b border-mendu-border bg-white px-5 py-4">
+        <div className="flex items-center gap-2">
+          <span className="font-brand text-xl font-bold tracking-tight text-mendu-ink">MENDU</span>
+          <span className="text-sm font-semibold text-mendu-red">delivery</span>
+        </div>
+        <span className="text-xs font-semibold text-mendu-inksoft">Peça. Receba. Aproveite.</span>
+      </header>
+
+      <main className="flex flex-1 flex-col gap-3 px-5 py-5">
+        <h1 className="text-base font-bold text-mendu-ink">Lojas perto de você</h1>
+
+        {stores.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-mendu-border bg-white p-6 text-center text-sm text-mendu-muted">
+            Nenhuma loja ativa por aqui ainda.
+          </p>
+        )}
+
+        <ul className="flex flex-col gap-3">
+          {stores.map((store) => (
+            <li key={store.id}>
+              <Link
+                href={`/loja/${store.slug}`}
+                className="flex items-center gap-3 rounded-2xl border border-mendu-border bg-white p-3 shadow-sm transition hover:border-mendu-red"
+              >
+                <div className="h-16 w-16 flex-shrink-0 rounded-xl bg-gradient-to-br from-mendu-red to-mendu-reddark" />
+                <span className="font-semibold text-mendu-ink">{store.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </main>
     </div>
   );
 }
@@ -2274,15 +2422,43 @@ export default async function StorePage({ params }: { params: { slug: string } }
   const { store, products } = result;
 
   return (
-    <div>
-      <h1>{store.name}</h1>
-      <ul>
-        {products.map((product) => (
-          <li key={product.id}>
-            {product.name} — R$ {Number(product.price).toFixed(2)}
-          </li>
-        ))}
-      </ul>
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-mendu-bg pb-24">
+      <div className="h-32 flex-shrink-0 bg-gradient-to-br from-mendu-red to-mendu-reddark" />
+
+      <div className="-mt-6 flex flex-col gap-4 px-5">
+        <div className="flex flex-col gap-1 rounded-2xl border border-mendu-border bg-white p-4 shadow-sm">
+          <h1 className="text-lg font-bold text-mendu-ink">{store.name}</h1>
+          <span className="w-fit rounded-full bg-mendu-green/10 px-2.5 py-0.5 text-xs font-bold text-mendu-green">
+            Aberto agora
+          </span>
+        </div>
+
+        <ul className="flex flex-col gap-3">
+          {products.map((product) => (
+            <li
+              key={product.id}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-mendu-border bg-white p-3 shadow-sm"
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-bold text-mendu-ink">{product.name}</span>
+                {product.description && (
+                  <span className="text-xs text-mendu-muted">{product.description}</span>
+                )}
+                <span className="text-sm font-bold text-mendu-ink">
+                  R$ {Number(product.price).toFixed(2)}
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label={`Adicionar ${product.name} ao carrinho`}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-mendu-red text-white shadow-sm transition hover:bg-mendu-reddark"
+              >
+                +
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -2678,17 +2854,62 @@ export default function CheckoutPage() {
     router.push(`/pedido/${result.orderId}`);
   }
 
+  const deliveryFee = 6;
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const total = subtotal + deliveryFee;
+
   return (
-    <div>
-      <h1>Finalizar pedido</h1>
-      <ul>
-        {items.map((item) => (
-          <li key={item.productId}>
-            {item.quantity}x {item.name} — R$ {(item.unitPrice * item.quantity).toFixed(2)}
-          </li>
-        ))}
-      </ul>
-      <p>Pagamento: na entrega</p>
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-mendu-bg pb-28">
+      <header className="flex items-center gap-3 border-b border-mendu-border bg-white px-5 py-4">
+        <h1 className="text-base font-bold text-mendu-ink">Finalizar pedido</h1>
+      </header>
+
+      <main className="flex flex-1 flex-col gap-4 px-5 py-5">
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li
+              key={item.productId}
+              className="flex items-center justify-between rounded-xl border border-mendu-border bg-white px-3 py-2.5"
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-mendu-ink">
+                  {item.quantity}x {item.name}
+                </span>
+                {item.observacoes && <span className="text-xs text-mendu-muted">{item.observacoes}</span>}
+              </div>
+              <span className="text-sm font-bold text-mendu-ink">
+                R$ {(item.unitPrice * item.quantity).toFixed(2)}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex flex-col gap-1 rounded-2xl border border-mendu-border bg-white p-4">
+          <div className="flex justify-between text-sm text-mendu-inksoft">
+            <span>Subtotal</span>
+            <span>R$ {subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-mendu-inksoft">
+            <span>Taxa de entrega</span>
+            <span>R$ {deliveryFee.toFixed(2)}</span>
+          </div>
+          <div className="mt-1 flex justify-between border-t border-mendu-border pt-2 text-sm font-bold text-mendu-ink">
+            <span>Total</span>
+            <span>R$ {total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <p className="text-sm font-semibold text-mendu-ink">Pagamento: na entrega</p>
+      </main>
+
+      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t border-mendu-border bg-white p-4">
+        <button
+          type="button"
+          className="w-full rounded-xl bg-mendu-red py-3 text-sm font-bold text-white transition hover:bg-mendu-reddark"
+        >
+          Confirmar pedido · R$ {total.toFixed(2)}
+        </button>
+      </div>
     </div>
   );
 }
@@ -3083,14 +3304,38 @@ export async function submitFeedbackAction(authUserId: string, orderId: string, 
 
 Create `src/app/pedido/[id]/page.tsx`:
 ```tsx
+const STEPS = [
+  { key: 'confirmed', label: 'Pedido confirmado' },
+  { key: 'preparing', label: 'Em preparo na loja' },
+  { key: 'out_for_delivery', label: 'Saiu para entrega' },
+  { key: 'delivered', label: 'Entregue' },
+] as const;
+
 export default function AcompanharPedidoPage({ params }: { params: { id: string } }) {
   return (
-    <div>
-      <h1>Pedido #{params.id}</h1>
-      <p>
-        Status do pedido e formulário de feedback (habilitado após <code>delivered</code>) consomem{' '}
-        <code>submitFeedbackAction</code> — lógica de negócio já coberta pelos testes do repositório.
-      </p>
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-mendu-bg">
+      <header className="flex flex-col gap-1 bg-mendu-ink px-5 py-4">
+        <span className="text-xs font-semibold text-white/60">Pedido #{params.id}</span>
+        <span className="text-lg font-bold text-white">Acompanhando seu pedido</span>
+      </header>
+
+      <main className="flex flex-1 flex-col gap-4 px-5 py-5">
+        <ol className="flex flex-col gap-4 rounded-2xl border border-mendu-border bg-white p-4">
+          {STEPS.map((step) => (
+            <li key={step.key} className="flex items-center gap-3">
+              <span className="h-6 w-6 flex-shrink-0 rounded-full border-2 border-mendu-border" />
+              <span className="text-sm font-bold text-mendu-ink">{step.label}</span>
+            </li>
+          ))}
+        </ol>
+
+        <p className="text-sm text-mendu-muted">
+          Formulário de nota/comentário (habilitado após o status <code>delivered</code>) chama{' '}
+          <code>submitFeedbackAction</code> — lógica de negócio já coberta pelos testes do repositório;
+          o preenchimento visual de qual etapa está ativa/concluída é uma iteração seguinte deste mesmo
+          plano.
+        </p>
+      </main>
     </div>
   );
 }
@@ -3171,7 +3416,7 @@ git commit -m "chore: document production environment variables for Vercel deplo
 
 **Fora do escopo deste plano, por decisão explícita da decomposição:** pagamento online via Asaas, `webhook_events`, `store_payment_accounts`, `billing_periods`, `financial_transactions`, painel admin visual completo, `audit_log`, `deliveries`/`delivery_tracking`, observabilidade (Sentry), testes E2E automatizados. Cada um pertence a um dos Planos 2-5 já combinados.
 
-**2. Placeholder scan:** nenhum "TBD"/"TODO" nos passos executáveis. As páginas das Tasks 9, 10, 15 e 16 têm um parágrafo explicando que a UI interativa completa (formulário rico, listagem com botões) é iteração visual posterior — mas a lógica de negócio de cada uma está 100% implementada e testada nos repositórios; isso é uma decisão consciente de escopo (lógica testável > polish visual no primeiro corte), não uma lacuna disfarçada.
+**2. Placeholder scan:** nenhum "TBD"/"TODO" nos passos executáveis. As páginas internas (Tasks 9, 10 e 15 — painel admin mínimo e dashboard do lojista) têm um parágrafo explicando que a UI interativa completa (formulário rico, listagem com botões) é iteração visual posterior — mas a lógica de negócio de cada uma está 100% implementada e testada nos repositórios; isso é uma decisão consciente de escopo (lógica testável > polish visual no primeiro corte para telas internas), não uma lacuna disfarçada. As telas voltadas ao público (Tasks 1, 7, 8, 12, 14 e 16 — layout base, cadastro, vitrine, checkout e acompanhamento) já usam Tailwind com os tokens de marca (`tailwind.config.ts`) e seguem o preview visual aprovado em 2026-09-22, incluída na Task 1.
 
 **3. Consistência de tipos:** `TenantContext`/`Role` (Task 2) usados identicamente em Tasks 6-16. `OrderStatus` (Task 15) reaproveitado em `advanceOrderStatusAction`. `OrderTotals`/`computeOrderTotals` (Task 13) consumido em `createOrder` (Task 14) sem divergência de nome. `StorageService`/`bunnyStorage` (Task 11) segue a interface exata definida no arquivo — nenhuma outra implementação é referenciada ainda (troca de provedor é um plano futuro).
 
