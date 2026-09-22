@@ -43,15 +43,16 @@ Marketplace de delivery multi-loja (modelo iFood), com cobrança SaaS por comiss
 
 ### 4.1 Núcleo
 
-**`users`** — identidade de autenticação única da plataforma.
+**`users`** — perfil de aplicação vinculado à identidade de autenticação única da plataforma.
 | campo | tipo |
 |---|---|
-| id | uuid |
+| id | uuid — mesmo id do usuário em `auth.users` (Supabase Auth) |
 | email | text, unique |
-| password_hash | text |
 | role | enum: customer, store_owner, platform_admin, courier |
 | phone | text, nullable |
 | created_at | timestamp |
+
+Sem `password_hash` aqui: credencial (senha, hash, recuperação de senha) é responsabilidade do Supabase Auth (`auth.users`), não da aplicação — evita reimplementar hashing de senha, área clássica de vulnerabilidade quando feita à mão.
 
 **`customers`** — perfil global de cliente (1:1 com `users` quando `role=customer`).
 | campo | tipo |
