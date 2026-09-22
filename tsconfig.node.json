@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "resolveJsonModule": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts", "next.config.ts", "postcss.config.js"]
+}
