@@ -13,7 +13,7 @@ describe('core identity and store schema', () => {
 
       const store = await client.query(
         `insert into stores (name, slug, status) values ($1, $2, 'pending_approval') returning id`,
-        ['Hamburgueria do Zé', 'hamburgueria-do-ze']
+        ['Hamburgueria do Zé', `hamburgueria-do-ze-${Date.now()}`]
       );
       const storeId = store.rows[0].id;
 
@@ -50,7 +50,8 @@ describe('core identity and store schema', () => {
         [user.rows[0].id]
       );
       const store = await client.query(
-        `insert into stores (name, slug) values ('Loja X', 'loja-x') returning id`
+        `insert into stores (name, slug) values ('Loja X', $1) returning id`,
+        [`loja-x-${Date.now()}`]
       );
 
       await expect(
