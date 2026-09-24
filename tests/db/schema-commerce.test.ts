@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { pool } from '@/lib/db/pool';
+import { withTenantContext } from '@/lib/db/tenantContext';
 
 describe('commerce schema', () => {
   it('seeds the four commercial plans from the spec', async () => {
-    const result = await pool.query(
-      `select code, commission_rate, monthly_fee from subscription_plans order by code`
-    );
+    const result = await withTenantContext({ role: 'platform_admin' }, async (client) => {
+      return client.query(
+        `select code, commission_rate, monthly_fee from subscription_plans order by code`
+      );
+    });
     const byCode = Object.fromEntries(result.rows.map((r) => [r.code, r]));
 
     expect(Number(byCode.START.commission_rate)).toBeCloseTo(0.07);
@@ -16,8 +18,7 @@ describe('commerce schema', () => {
   });
 
   it('creates an order with items and events end to end', async () => {
-    const client = await pool.connect();
-    try {
+    await withTenantContext({ role: 'platform_admin' }, async (client) => {
       const user = await client.query(
         `insert into users (id, email, role) values (gen_random_uuid(), $1, 'customer') returning id`,
         [`cliente-${Date.now()}@example.com`]
@@ -72,8 +73,6 @@ describe('commerce schema', () => {
       expect(items.rows).toHaveLength(1);
       expect(events.rows).toHaveLength(1);
       expect(subscription.rows[0].id).toBeDefined();
-    } finally {
-      client.release();
-    }
+    });
   });
 });

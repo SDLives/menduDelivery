@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { pool } from '@/lib/db/pool';
+import { withTenantContext } from '@/lib/db/tenantContext';
 
 describe('core identity and store schema', () => {
   it('creates a store, a store_owner user, and an address respecting the ownership check', async () => {
-    const client = await pool.connect();
-    try {
+    await withTenantContext({ role: 'platform_admin' }, async (client) => {
       const user = await client.query(
         `insert into users (id, email, role) values (gen_random_uuid(), $1, 'store_owner') returning id`,
         [`lojista-${Date.now()}@example.com`]
@@ -33,14 +32,11 @@ describe('core identity and store schema', () => {
 
       const result = await client.query(`select address_id from stores where id = $1`, [storeId]);
       expect(result.rows[0].address_id).toBe(address.rows[0].id);
-    } finally {
-      client.release();
-    }
+    });
   });
 
   it('rejects an address with both customer_id and store_id set', async () => {
-    const client = await pool.connect();
-    try {
+    await withTenantContext({ role: 'platform_admin' }, async (client) => {
       const user = await client.query(
         `insert into users (id, email, role) values (gen_random_uuid(), $1, 'customer') returning id`,
         [`cliente-${Date.now()}@example.com`]
@@ -61,8 +57,6 @@ describe('core identity and store schema', () => {
           [customer.rows[0].id, store.rows[0].id]
         )
       ).rejects.toThrow();
-    } finally {
-      client.release();
-    }
+    });
   });
 });
