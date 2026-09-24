@@ -36,7 +36,7 @@ begin
 end
 $$;
 
-grant usage, create on schema public to mendu_app;
+grant usage on schema public to mendu_app;
 
 -- No tables exist yet at this point in migration history, but grant DML on
 -- whatever is currently in `public` for completeness / idempotency on reruns.
