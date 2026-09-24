@@ -42,6 +42,13 @@ export async function signupCustomer(
     return { userId: data.user.id, customerId: customer.rows[0].id };
   } catch (err) {
     await client.query('ROLLBACK');
+    // Best-effort cleanup: delete the Auth user to avoid orphaned state
+    try {
+      await supabase.auth.admin.deleteUser(data.user.id);
+    } catch (cleanupErr) {
+      // Log cleanup failure but don't mask the original error
+      console.error(`Failed to delete orphaned Auth user ${data.user.id}:`, cleanupErr);
+    }
     throw err;
   } finally {
     client.release();
