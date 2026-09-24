@@ -1,5 +1,6 @@
 import { withTenantContext, type TenantContext } from '@/lib/db/tenantContext';
 import { computeOrderTotals } from '@/lib/orders/totals';
+import { isValidTransition, type OrderStatus } from '@/lib/orders/stateMachine';
 
 export interface CreateOrderInput {
   storeId: string;
@@ -88,5 +89,48 @@ export async function createOrder(ctx: TenantContext, input: CreateOrderInput): 
     );
 
     return { orderId };
+  });
+}
+
+export async function advanceOrderStatus(ctx: TenantContext, orderId: string, nextStatus: OrderStatus): Promise<void> {
+  if (ctx.role !== 'store_owner' && ctx.role !== 'platform_admin') {
+    throw new Error('Apenas lojista ou admin pode avançar o status do pedido');
+  }
+
+  await withTenantContext(ctx, async (client) => {
+    const current = await client.query<{ status: OrderStatus; customer_id: string; store_id: string }>(
+      `select status, customer_id, store_id from orders where id = $1`,
+      [orderId]
+    );
+    if (current.rows.length === 0) {
+      throw new Error('Pedido não encontrado');
+    }
+    const currentStatus = current.rows[0].status;
+
+    if (!isValidTransition(currentStatus, nextStatus)) {
+      throw new Error(`Transição de status inválida: ${currentStatus} -> ${nextStatus}`);
+    }
+
+    await client.query(`update orders set status = $1 where id = $2`, [nextStatus, orderId]);
+
+    await client.query(
+      `insert into order_events (order_id, event_type, payload, actor_type)
+       values ($1, 'status_changed', $2, $3)`,
+      [orderId, JSON.stringify({ from: currentStatus, to: nextStatus }), ctx.role === 'platform_admin' ? 'admin' : 'store_user']
+    );
+
+    if (nextStatus === 'delivered') {
+      const order = await client.query<{ customer_id: string; store_id: string }>(
+        `select customer_id, store_id from orders where id = $1`,
+        [orderId]
+      );
+      await client.query(
+        `insert into customer_stores (customer_id, store_id, first_order_at, last_order_at, total_orders)
+         values ($1, $2, now(), now(), 1)
+         on conflict (customer_id, store_id)
+         do update set last_order_at = now(), total_orders = customer_stores.total_orders + 1`,
+        [order.rows[0].customer_id, order.rows[0].store_id]
+      );
+    }
   });
 }
