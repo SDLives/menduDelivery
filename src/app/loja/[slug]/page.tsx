@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getStoreBySlugWithProducts } from '@/lib/db/repositories/publicStorefront';
+import { AddToCartButton } from './AddToCartButton';
+import { CartBar } from './CartBar';
 
 export const revalidate = 60;
 
@@ -37,17 +39,18 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                   R$ {Number(product.price).toFixed(2)}
                 </span>
               </div>
-              <button
-                type="button"
-                aria-label={`Adicionar ${product.name} ao carrinho`}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-mendu-red text-white shadow-sm transition hover:bg-mendu-reddark"
-              >
-                +
-              </button>
+              <AddToCartButton
+                storeId={store.id}
+                productId={product.id}
+                name={product.name}
+                unitPrice={Number(product.price)}
+              />
             </li>
           ))}
         </ul>
       </div>
+
+      <CartBar />
     </div>
   );
 }

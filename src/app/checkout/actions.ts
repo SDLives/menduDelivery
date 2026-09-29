@@ -2,9 +2,16 @@
 
 import { resolveSessionContext } from '@/lib/auth/session';
 import { createOrder as createOrderRepo, type CreateOrderInput } from '@/lib/db/repositories/orders';
+import { createAddressForCustomer, type CreateAddressInput } from '@/lib/db/repositories/addresses';
 
 export async function createOrderAction(authUserId: string, input: CreateOrderInput) {
   const ctx = await resolveSessionContext(authUserId);
   if (!ctx) throw new Error('Sessão inválida');
   return createOrderRepo(ctx, input);
+}
+
+export async function createAddressAction(authUserId: string, input: CreateAddressInput) {
+  const ctx = await resolveSessionContext(authUserId);
+  if (!ctx) throw new Error('Sessão inválida');
+  return createAddressForCustomer(ctx, input);
 }

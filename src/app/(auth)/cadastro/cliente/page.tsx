@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
 import { signupCustomer } from './actions';
 
 export default function CadastroClientePage() {
@@ -16,6 +17,18 @@ export default function CadastroClientePage() {
     setError(null);
     try {
       await signupCustomer({ email, password, phone: phone || undefined });
+
+      // signupCustomer cria o usuário no Supabase Auth pelo admin API (server-side),
+      // o que não estabelece sessão nenhuma no browser — sem este signInWithPassword
+      // o cliente ficaria "cadastrado" mas não logado, e o checkout não saberia quem ele é.
+      const { error: signInError } = await supabaseBrowserClient().auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        throw new Error('Conta criada, mas não foi possível entrar automaticamente. Tente novamente.');
+      }
+
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao cadastrar');
