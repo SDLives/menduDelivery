@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/lib/cart/cartStore';
 import { supabaseBrowserClient } from '@/lib/supabaseBrowserClient';
+import { buscarCep } from '@/lib/cep';
+import { maskCEP, maskUF } from '@/lib/masks';
 
 const inputClass =
   'rounded-xl border border-mendu-border px-3 py-2.5 text-sm outline-none focus:border-mendu-red';
@@ -22,9 +24,22 @@ export default function CheckoutPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cepAviso, setCepAviso] = useState<string | null>(null);
 
   function updateAddress<K extends keyof typeof address>(key: K, value: string) {
     setAddress((a) => ({ ...a, [key]: value }));
+  }
+
+  async function handleCepBlur() {
+    setCepAviso(null);
+    const endereco = await buscarCep(address.cep);
+    if (!endereco) {
+      if (address.cep.replace(/\D/g, '').length === 8) {
+        setCepAviso('CEP não encontrado, preencha o endereço manualmente.');
+      }
+      return;
+    }
+    setAddress((a) => ({ ...a, rua: endereco.rua, bairro: endereco.bairro, municipio: endereco.municipio, uf: endereco.uf }));
   }
 
   async function handleConfirm() {
@@ -102,9 +117,11 @@ export default function CheckoutPage() {
               className={`${inputClass} col-span-2`}
               placeholder="CEP"
               value={address.cep}
-              onChange={(e) => updateAddress('cep', e.target.value)}
+              onChange={(e) => updateAddress('cep', maskCEP(e.target.value))}
+              onBlur={handleCepBlur}
               required
             />
+            {cepAviso && <p className="col-span-2 -mt-1 text-xs font-semibold text-mendu-gold">{cepAviso}</p>}
             <input
               className={`${inputClass} col-span-2`}
               placeholder="Rua"
@@ -144,7 +161,7 @@ export default function CheckoutPage() {
               maxLength={2}
               placeholder="UF"
               value={address.uf}
-              onChange={(e) => updateAddress('uf', e.target.value.toUpperCase())}
+              onChange={(e) => updateAddress('uf', maskUF(e.target.value))}
               required
             />
           </div>
